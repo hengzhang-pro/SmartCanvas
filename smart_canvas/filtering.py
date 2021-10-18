@@ -56,6 +56,25 @@ def canvas_filter(frame):
     frame = cv2.addWeighted(frame, alpha, canvas_bg, 1 - alpha, 0)
     return frame
 
+def tv_60(frame):
+    #cv2.namedWindow('image')
+    #cv2.createTrackbar('val', 'image', 0, 255, nothing)
+    #cv2.createTrackbar('threshold', 'image', 0, 100, nothing)
+    height, width = frame.shape[:2]
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    #thresh = cv2.getTrackbarPos('threshold', 'image')
+    thresh = 50
+    val = 125
+    for i in range(height):
+        for j in range(width):
+            if np.random.randint(100) <= thresh:
+                if np.random.randint(2) == 0:
+                    gray[i,j] = min(gray[i,j] + np.random.randint(0, val+1), 255)
+    # adding noise to image and setting values > 255 to 255.
+                else: gray[i, j] = max(gray[i, j] - np.random.randint(0, val+1), 0)
+    # subtracting noise to image and setting values < 0 to 0.
+    return gray
+
 catalog = {
     'oil_painting': lambda x: filter_oil_painting(x),
     'watercolor': lambda x: cv2.stylization(x, sigma_s=60, sigma_r=0.6),
@@ -64,7 +83,8 @@ catalog = {
     'color_sketch': lambda x: cv2.pencilSketch(x, sigma_s=60, sigma_r=0.07, shade_factor=0.05)[1],
     'blur': lambda x: cv2.GaussianBlur(x, (21, 21), 0),
     'mosaic': lambda x: mosaic_filter(x),
-    'canvas': lambda x: canvas_filter(x)
+    'canvas': lambda x: canvas_filter(x),
+    'tv_60': lambda x: tv_60(x)
 }
 
 carousel = itertools.cycle(catalog)
