@@ -5,7 +5,7 @@ PIP = $(VENV)/bin/pip
 
 $(VENV)/bin/activate:
 	python3 -m venv venv
-	$(PIP) install . --use-feature=in-tree-build
+	$(PIP) install .
 
 init: $(VENV)/bin/activate
 
