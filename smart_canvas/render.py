@@ -1,17 +1,14 @@
 import os
-
-import moderngl
-from .window import Window
-
-import numpy as np
 from array import array
 
-from threading import Thread
-
-from .capture import VideoRead
-from .core import CanvasCore
-
+import moderngl
+import numpy as np
 import cv2
+
+from capture import VideoRead
+from core import CanvasCore
+from window import Window
+
 
 class SmartRender(Window):
     gl_version = (3, 3)
@@ -21,13 +18,10 @@ class SmartRender(Window):
         super().__init__(**kwargs)
         self.program = None
 
-
-        self.video = VideoRead(0).start()#self.window.source#cv2.VideoCapture("test.mp4")
+        self.video = VideoRead(0).start()
         self.process = CanvasCore(self.video.frame).start()
-        #self.video.stream.set(3, 1280)
-        #self.video.stream.set(4, 720)
         self.fbo = self.ctx.framebuffer(
-            color_attachments=[self.ctx.texture(Window.window_size,3)]
+            color_attachments=[self.ctx.texture(Window.window_size, 3)]
         )
 
         self.program = self.ctx.program(
@@ -58,12 +52,12 @@ class SmartRender(Window):
 
         self.vertices = self.ctx.buffer(
             array('f',
-            [
-            -1,  1, 0, 1,  # upper left
-            -1, -1, 0, 0, # lower left
-            1,  1, 1, 1, # upper right
-           1, -1, 1, 0, # lower right
-        ])
+                  [
+                      -1,  1, 0, 1,  # upper left
+                      -1, -1, 0, 0,  # lower left
+                      1,  1, 1, 1,  # upper right
+                      1, -1, 1, 0,  # lower right
+                  ])
         )
 
         self.quad = self.ctx.vertex_array(
@@ -73,13 +67,15 @@ class SmartRender(Window):
             ]
         )
         # TODO/TOCHECK: internal parameter format. Might get better performance when using shorter format bc default includes alpha
-        self.frame_texture = self.ctx.texture((640,480), 3)#, internal_format=0x8C41)
+        self.frame_texture = self.ctx.texture(
+            (640, 480), 3)  # , internal_format=0x8C41)
 
     def render(self, time, frame_time):
-
         self.process.frame = self.video.frame
-        self.frame_texture.write(cv2.flip(self.process.frameout,0))
-
+        out_frame = self.process.frameout
+        if (out_frame is None):
+            return
+        self.frame_texture.write(cv2.flip(out_frame, 0))
         self.frame_texture.use(0)
         self.quad.render(mode=moderngl.TRIANGLE_STRIP)
 
@@ -89,5 +85,4 @@ class SmartRender(Window):
 
 
 if __name__ == '__main__':
-
     SmartRender.run()

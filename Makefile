@@ -16,11 +16,11 @@ init: $(VENV)/$(INT_PATH)/activate
 
 .PHONY: run
 run: init
-	$(PYTHON) -m $(PACKAGE)
+	$(PYTHON) $(PACKAGE)
 
 .PHONY: run-web
 run-web: init
-	$(PYTHON) -m web
+	$(PYTHON) smart_canvas/web.py
 
 .PHONY: hl
 hl: init

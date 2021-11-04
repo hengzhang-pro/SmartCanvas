@@ -52,8 +52,8 @@ def canvas_filter(frame):
     return frame
 
 catalog = {
+    'canvas': canvas_filter,
     'mosaic': mosaic_filter,
-    'canvas': canvas_filter
 }
 
 carousel = itertools.cycle(catalog)
