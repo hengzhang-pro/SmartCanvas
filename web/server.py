@@ -11,7 +11,7 @@ import numpy as np
 import cv2
 
 # Internal modules
-import core
+from smart_canvas.core import CanvasCore
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
 # different async modes, or leave it set to None for the application to choose
@@ -21,6 +21,7 @@ async_mode = 'threading'
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode=async_mode, cors_allowed_origins="*")
 
+core_threads = {}
 
 @app.route('/')
 def index():
@@ -33,6 +34,7 @@ def get_id():
     id = uuid.uuid4().hex + uuid.uuid4().hex
     print('[INFO] Web client requested ID: {}'.format(id))
     register_handler_for(id)
+    core_threads.update({id: CanvasCore().start()})
     return id
 
 
@@ -63,15 +65,16 @@ def b64_to_cv(jpg_as_text):
 
 
 def register_handler_for(id):
-    Processor = core.CanvasCore().start()
-
     @socketio.on('web2server', namespace=f'/web/{id}')
     def handle_client_message(message):
+        core = core_threads[id]
         header = message.split(",")[0]
         b64_frame = message.split(",")[1]
         cv_image = b64_to_cv(b64_frame)
-        Processor.frame = cv_image
-        mod_message = header + "," + cv_to_b64(Processor.frameout)
+        core.frame = cv_image
+        if 'out_frame' not in vars(core):
+            return
+        mod_message = header + "," + cv_to_b64(core.out_frame)
         socketio.emit('server2web', mod_message, namespace=f'/web/{id}')
 
 

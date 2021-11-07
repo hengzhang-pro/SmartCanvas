@@ -12,10 +12,10 @@ class HandDetect:
     Class that continuously gets finger count with a dedicated thread.
     """
 
-    def __init__(self, max_num_hands=2, min_detection_confidence=0.8, min_tracking_confidence=0.8):
+    def __init__(self, frame, max_num_hands=2, min_detection_confidence=0.8, min_tracking_confidence=0.8):
         self.stopped = False
         self.finger_count = 0
-        self.frame = None
+        self.frame = frame
         self.hands = mpHands.Hands(max_num_hands=max_num_hands, min_detection_confidence=min_detection_confidence,
                                    min_tracking_confidence=min_tracking_confidence)
 

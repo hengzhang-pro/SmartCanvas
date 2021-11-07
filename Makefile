@@ -16,11 +16,15 @@ init: $(VENV)/$(INT_PATH)/activate
 
 .PHONY: run
 run: init
-	$(PYTHON) $(PACKAGE)
+	$(PYTHON) -m $(PACKAGE)
 
-.PHONY: run-web
-run-web: init
-	$(PYTHON) smart_canvas/web.py
+.PHONY: web
+web: init
+	$(PYTHON) -m web.server
+
+.PHONY: web-local
+web-local: init
+	gunicorn --worker-class eventlet -w 1 'web.server:app'
 
 .PHONY: hl
 hl: init

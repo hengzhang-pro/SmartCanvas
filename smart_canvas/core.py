@@ -9,9 +9,9 @@ from threading import Thread
 import time
 
 # Internal packages
-from background import ForegroundMask
-from gesture_detection import HandDetect
-from filtering import FilterCarousel
+from smart_canvas.background import ForegroundMask
+from smart_canvas.gesture_detection import HandDetect
+from smart_canvas.filters.carousel import FilterCarousel
 
 
 class CanvasCore:
@@ -20,16 +20,18 @@ class CanvasCore:
     """
 
     def __init__(self):
+        self.first_frame_in = False
+        self.first_frame_in_old = False
+
         self.frame = None
         self.stopped = False
-        self.frameout = None
+        self.out_frame = None
         self.tick = time.time()
 
-        self.fg_masker = ForegroundMask().start()
+        self.fg_masker = None
         self.fg_mask = None
 
-        self.hand_detector = HandDetect(
-            min_detection_confidence=0.9, max_num_hands=2).start()
+        self.hand_detector = None
         self.finger_count = 0
 
         self.filters = FilterCarousel()
@@ -49,19 +51,27 @@ class CanvasCore:
 
     def process(self):
         while not self.stopped:
-            time.sleep(0.01)
+            time.sleep(0.001)
             self.tick = time.time()
 
             frame = self.frame
             if frame is None:
                 continue
+            
+            self.first_frame_in = True
+
+            if self.first_frame_in != self.first_frame_in_old:
+                self.fg_masker = ForegroundMask(frame).start()
+                self.hand_detector = HandDetect(frame).start()
+
+            self.first_frame_in_old = self.first_frame_in
 
             self.fg_masker.frame = frame
             self.hand_detector.frame = frame
 
             apply_filter = (self.apply_filter_freeze_time - self.tick) > 0
             if apply_filter:
-                self.frameout = self.filtered_frame
+                self.out_frame = self.filtered_frame
                 continue
 
             change_filter = (self.change_filter_freeze_time - self.tick) > 0
@@ -73,7 +83,7 @@ class CanvasCore:
 
             cv2.putText(frame, str(finger_count), (45, 45),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            self.frameout = frame
+            self.out_frame = frame
 
             if apply_filter or change_filter:
                 continue
@@ -95,5 +105,7 @@ class CanvasCore:
 
     def stop(self):
         self.stopped = True
-        self.fg_masker.stop()
-        self.hand_detector.stop()
+        if self.fg_masker is not None:
+            self.fg_masker.stop()
+        if self.hand_detector is not None:
+            self.hand_detector.stop()

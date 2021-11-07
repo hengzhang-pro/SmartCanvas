@@ -9,11 +9,11 @@ class ForegroundMask:
     Class that gets the foreground mask with a dedicated thread.
     """
 
-    def __init__(self, src=0):
+    def __init__(self, frame, src=0):
         self.back_sub = cv2.createBackgroundSubtractorMOG2(
             history=20, varThreshold=16, detectShadows=False)
         self.fg_mask = None
-        self.frame = None
+        self.frame = frame
         self.stopped = False
 
     def apply(self):
