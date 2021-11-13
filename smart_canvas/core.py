@@ -28,7 +28,7 @@ class CanvasCore:
         self.out_frame = None
         self.tick = time.time()
 
-        self.fg_masker = None
+        self.fg_masker = ForegroundMask()
         self.fg_mask = None
 
         self.hand_detector = None
@@ -39,19 +39,21 @@ class CanvasCore:
 
         self.apply_filter_freeze_time = self.tick
         self.change_filter_freeze_time = self.tick
+        self.create_background_freeze_time = self.tick + 5
 
     def change_filter(self):
         self.filters.next_filter()
         self.change_filter_freeze_time += 3
 
-    def apply_filter(self, frame, fg_mask):
+    def apply_filter(self, frame):
+        fg_mask = self.fg_masker.apply(frame)
         masked_frame = cv2.bitwise_and(frame, frame, mask=fg_mask)
         self.filtered_frame = self.filters.current_filter(masked_frame)
         self.apply_filter_freeze_time += 5
 
     def process(self):
         while not self.stopped:
-            time.sleep(0.001)
+            time.sleep(0.01)
             self.tick = time.time()
 
             frame = self.frame
@@ -61,12 +63,10 @@ class CanvasCore:
             self.first_frame_in = True
 
             if self.first_frame_in != self.first_frame_in_old:
-                self.fg_masker = ForegroundMask(frame).start()
                 self.hand_detector = HandDetect(frame).start()
 
             self.first_frame_in_old = self.first_frame_in
 
-            self.fg_masker.frame = frame
             self.hand_detector.frame = frame
 
             apply_filter = (self.apply_filter_freeze_time - self.tick) > 0
@@ -79,13 +79,18 @@ class CanvasCore:
                 cv2.putText(frame, self.filters.current_filter.__name__,
                             (45, 375), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
+            create_background = (self.create_background_freeze_time - self.tick) > 0
+            if create_background:
+                self.fg_masker.create_background(frame)
+                continue
+
             finger_count = self.hand_detector.finger_count
 
             cv2.putText(frame, str(finger_count), (45, 45),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             self.out_frame = frame
 
-            if apply_filter or change_filter:
+            if apply_filter or change_filter or create_background:
                 continue
 
             if finger_count == 2:
@@ -93,11 +98,12 @@ class CanvasCore:
                 continue
 
             if finger_count == 5:
-                self.apply_filter(frame, self.fg_masker.fg_mask)
+                self.apply_filter(frame)
                 continue
 
             self.apply_filter_freeze_time = self.tick
             self.change_filter_freeze_time = self.tick
+            self.create_background_freeze_time = self.tick
 
     def start(self):
         Thread(target=self.process, args=()).start()
