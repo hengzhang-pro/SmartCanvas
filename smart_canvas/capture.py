@@ -21,9 +21,10 @@ class VideoRead:
         return self
 
     def get(self):
-        while not self.stopped and self.status:
+        while not self.stopped:
             (self.status, self.frame) = self.stream.read()
-            self.video_queue.put(self.frame)
+            if self.status:
+                self.video_queue.put(self.frame)
 
     def stop(self):
         self.stopped = True
