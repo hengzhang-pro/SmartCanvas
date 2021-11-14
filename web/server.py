@@ -3,6 +3,7 @@
 # Default packages
 import uuid
 import base64
+from multiprocessing import Queue
 
 # External packages
 from flask_socketio import SocketIO
@@ -22,6 +23,7 @@ app = Flask(__name__)
 socketio = SocketIO(app, async_mode=async_mode, cors_allowed_origins="*")
 
 core_threads = {}
+core_queues = {}
 
 @app.route('/')
 def index():
@@ -34,7 +36,8 @@ def get_id():
     id = uuid.uuid4().hex + uuid.uuid4().hex
     print('[INFO] Web client requested ID: {}'.format(id))
     register_handler_for(id)
-    core_threads.update({id: CanvasCore().start()})
+    core_queues.update({id: Queue()})
+    core_threads.update({id: CanvasCore(q_consumer=core_queues[id]).start()})
     return id
 
 
@@ -68,10 +71,11 @@ def register_handler_for(id):
     @socketio.on('web2server', namespace=f'/web/{id}')
     def handle_client_message(message):
         core = core_threads[id]
+        producer_q = core_queues[id]
         header = message.split(",")[0]
         b64_frame = message.split(",")[1]
         cv_image = b64_to_cv(b64_frame)
-        core.frame = cv_image
+        producer_q.put(cv_image)
         if 'out_frame' not in vars(core):
             return
         mod_message = header + "," + cv_to_b64(core.out_frame)
