@@ -19,21 +19,15 @@ class CanvasCore:
     Class that processes the frame with a dedicated thread.
     """
 
-    def __init__(self):
-        self.first_frame_in = False
-        self.first_frame_in_old = False
-
+    def __init__(self, q_consumer):
+        self.q_consumer = q_consumer
         self.frame = None
         self.stopped = False
         self.out_frame = None
         self.tick = time.time()
 
         self.fg_masker = ForegroundMask()
-        self.fg_mask = None
-
-        self.hand_detector = None
-        self.finger_count = 0
-
+        self.hand_detector = HandDetect()
         self.filters = FilterCarousel()
         self.filtered_frame = None
 
@@ -52,22 +46,14 @@ class CanvasCore:
         self.apply_filter_freeze_time += 5
 
     def process(self):
+        finger_count = 0
         while not self.stopped:
-            time.sleep(0.01)
             self.tick = time.time()
 
-            frame = self.frame
+            frame = self.q_consumer.get()
             if frame is None:
-                continue
-            
-            self.first_frame_in = True
-
-            if self.first_frame_in != self.first_frame_in_old:
-                self.hand_detector = HandDetect(frame).start()
-
-            self.first_frame_in_old = self.first_frame_in
-
-            self.hand_detector.frame = frame
+                self.stop()
+                break
 
             apply_filter = (self.apply_filter_freeze_time - self.tick) > 0
             if apply_filter:
@@ -79,12 +65,13 @@ class CanvasCore:
                 cv2.putText(frame, self.filters.current_filter.__name__,
                             (45, 375), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
-            create_background = (self.create_background_freeze_time - self.tick) > 0
+            create_background = (
+                self.create_background_freeze_time - self.tick) > 0
             if create_background:
                 self.fg_masker.create_background(frame)
                 continue
 
-            finger_count = self.hand_detector.finger_count
+            finger_count = self.hand_detector.count_fingers(frame)
 
             cv2.putText(frame, str(finger_count), (45, 45),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
@@ -111,7 +98,3 @@ class CanvasCore:
 
     def stop(self):
         self.stopped = True
-        if self.fg_masker is not None:
-            self.fg_masker.stop()
-        if self.hand_detector is not None:
-            self.hand_detector.stop()

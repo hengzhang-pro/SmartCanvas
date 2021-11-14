@@ -10,7 +10,8 @@ class VideoRead:
     with a dedicated thread.
     """
 
-    def __init__(self, src=0):
+    def __init__(self, q_producer, src=0):
+        self.video_queue = q_producer
         self.stream = cv2.VideoCapture(src)
         (self.status, self.frame) = self.stream.read()
         self.stopped = False
@@ -20,13 +21,11 @@ class VideoRead:
         return self
 
     def get(self):
-        while not self.stopped:
-            time.sleep(0.01)
-            if not self.status:
-                self.stop()
-            else:
-                (self.status, self.frame) = self.stream.read()
-        self.stream.release()
+        while not self.stopped and self.status:
+            (self.status, self.frame) = self.stream.read()
+            self.video_queue.put(self.frame)
 
     def stop(self):
         self.stopped = True
+        self.video_queue.put(None)
+        self.stream.release()

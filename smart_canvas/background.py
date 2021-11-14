@@ -11,8 +11,6 @@ class ForegroundMask:
         self.back_sub = cv2.createBackgroundSubtractorMOG2(
             history=100, varThreshold=30, detectShadows=False)
         self.fg_mask = None
-        self.frame = None
-        self.stopped = False
         self.frame_list = []
 
     def create_background(self, frame):

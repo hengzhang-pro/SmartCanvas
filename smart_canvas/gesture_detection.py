@@ -12,12 +12,12 @@ class HandDetect:
     Class that continuously gets finger count with a dedicated thread.
     """
 
-    def __init__(self, frame, max_num_hands=2, min_detection_confidence=0.8, min_tracking_confidence=0.8):
-        self.stopped = False
-        self.finger_count = 0
-        self.frame = frame
-        self.hands = mpHands.Hands(max_num_hands=max_num_hands, min_detection_confidence=min_detection_confidence,
-                                   min_tracking_confidence=min_tracking_confidence)
+    def __init__(self):
+        self.hands = mpHands.Hands(
+            max_num_hands=2, 
+            min_detection_confidence=0.8, 
+            min_tracking_confidence=0.8
+        )
 
     def findHandLandMarks(self, image, handNumber=0, draw=False):
         originalImage = image
@@ -64,17 +64,3 @@ class HandDetect:
             if handLandmarks[20][2] < handLandmarks[18][2]:  # Little finger
                 count = count+1
         return count
-
-    def get_finger_count(self):
-        while not self.stopped:
-            time.sleep(0.5)
-            if self.frame is None:
-                continue
-            self.finger_count = self.count_fingers(self.frame)
-
-    def start(self):
-        Thread(target=self.get_finger_count, args=()).start()
-        return self
-
-    def stop(self):
-        self.stopped = True
