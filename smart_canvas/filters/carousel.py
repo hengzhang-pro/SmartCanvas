@@ -4,9 +4,13 @@
 import itertools
 
 # Internal modules
-from smart_canvas.filters.canvas import canvas_filter
-from smart_canvas.filters.mosaic import mosaic_filter
-from smart_canvas.filters.painterly import painterly_filter
+#from smart_canvas.filters.canvas import canvas_filter
+#from smart_canvas.filters.mosaic import mosaic_filter
+#from smart_canvas.filters.painterly import painterly_filter
+
+from filters.canvas import canvas_filter
+from filters.mosaic import mosaic_filter
+from filters.painterly import painterly_filter
 
 
 class FilterCarousel:

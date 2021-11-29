@@ -4,9 +4,13 @@ import moderngl
 import cv2
 from queue import Queue
 
-from smart_canvas.capture import VideoRead
-from smart_canvas.core import CanvasCore
-from smart_canvas.window import Window
+#from smart_canvas.capture import VideoRead
+#from smart_canvas.core import CanvasCore
+#from smart_canvas.window import Window
+
+from capture import VideoRead
+from core_sm import CanvasCore
+from window import Window
 
 
 class SmartRender(Window):
